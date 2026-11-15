@@ -120,13 +120,13 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KEY_B64: ${{ secrets.DEPLOY_SSH_KEY_B64 }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
         run: |
           set -eu
-          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS GHCR_READ_TOKEN PUBLIC_SITE_URL; do
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY_B64 DEPLOY_KNOWN_HOSTS GHCR_READ_TOKEN PUBLIC_SITE_URL; do
             if [ -z "$(printenv "$name")" ]; then
               echo "::error::Configure $name in GitHub repository settings."
               exit 1
@@ -136,7 +136,7 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KEY_B64: ${{ secrets.DEPLOY_SSH_KEY_B64 }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/sumrak' }}
           GHCR_USERNAME: ${{ vars.GHCR_USERNAME || github.repository_owner }}
@@ -154,9 +154,13 @@ jobs:
           install -m 700 -d "$HOME/.ssh"
           KEY_FILE="$HOME/.ssh/sumrak_deploy"
           trap 'rm -f "$KEY_FILE"' EXIT
-          printf '%s\n' "$DEPLOY_SSH_KEY" > "$KEY_FILE"
+          printf '%s' "$DEPLOY_SSH_KEY_B64" | base64 --decode > "$KEY_FILE"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$KEY_FILE" "$HOME/.ssh/known_hosts"
+          if ! ssh-keygen -y -f "$KEY_FILE" >/dev/null; then
+            echo "::error::DEPLOY_SSH_KEY_B64 must contain a Base64-encoded, unencrypted OpenSSH private key."
+            exit 1
+          fi
 
           TARGET="$DEPLOY_USER@$DEPLOY_HOST"
           SSH=(ssh -i "$KEY_FILE" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
