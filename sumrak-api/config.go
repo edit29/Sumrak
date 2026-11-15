@@ -11,9 +11,11 @@ import (
 
 // Общее состояние и настройки из переменных окружения.
 var (
-	db        *pgxpool.Pool
-	origin    string // адрес сайта, с которого разрешены запросы на изменение данных
-	ownerPass string // пароль кабинета владельца
+	db               *pgxpool.Pool
+	origin           string // адрес сайта, с которого разрешены запросы на изменение данных
+	miniAppOrigin    string
+	ownerPass        string // пароль кабинета владельца
+	telegramBotToken string
 )
 
 func loadConfig() error {
@@ -31,6 +33,11 @@ func loadConfig() error {
 	}
 
 	origin = os.Getenv("ALLOWED_ORIGIN")
+	miniAppOrigin = os.Getenv("TELEGRAM_MINI_APP_ORIGIN")
+	if miniAppOrigin == "" {
+		miniAppOrigin = "http://localhost:3001"
+	}
 	ownerPass = os.Getenv("OWNER_PASSWORD")
+	telegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
 	return nil
 }

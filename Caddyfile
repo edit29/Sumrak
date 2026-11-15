@@ -1,4 +1,10 @@
 {$SITE_DOMAIN} {
 	encode zstd gzip
-	reverse_proxy web:3000
+	@miniapp path /miniapp /miniapp/*
+	handle @miniapp {
+		reverse_proxy miniapp:3001
+	}
+	handle {
+		reverse_proxy web:3000
+	}
 }

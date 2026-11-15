@@ -29,12 +29,23 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: sumrak-web/package-lock.json
+          cache-dependency-path: |
+            sumrak-web/package-lock.json
+            sumrak-miniapp/package-lock.json
       - name: Install web dependencies
         working-directory: sumrak-web
         run: npm ci
       - name: Build web app
         working-directory: sumrak-web
+        env:
+          API_URL: http://api:8080
+          NEXT_PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://example.com' }}
+        run: npm run build
+      - name: Install Mini App dependencies
+        working-directory: sumrak-miniapp
+        run: npm ci
+      - name: Build Mini App
+        working-directory: sumrak-miniapp
         env:
           API_URL: http://api:8080
           NEXT_PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://example.com' }}
@@ -84,6 +95,19 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-web:latest
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+      - name: Build and push Mini App image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sumrak-miniapp
+          push: true
+          build-args: |
+            API_URL=http://api:8080
+            NEXT_PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-miniapp:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-miniapp:latest
+          cache-from: type=gha,scope=miniapp
+          cache-to: type=gha,mode=max,scope=miniapp
 
   deploy:
     needs: publish

@@ -6,6 +6,7 @@
 Docker-образ использует Next.js standalone server; состав сервисов, TLS, CI и деплой на VPS описаны в корневом `compose.yaml` и `sumrak-api/README.md`.
 Цены на клиенте не хранятся: показ — только из ответов /api/quote. Корзина и черновик — в localStorage.
 Кабинет владельца: /owner (пароль из OWNER_PASSWORD у API).
+Telegram Mini App доступен отдельно в `sumrak-miniapp/` и публикуется по адресу `/miniapp`; перед запуском добавьте токен BotFather в `TELEGRAM_BOT_TOKEN` на сервере.
 
 Перед публикацией:
 - В `lib/site.js` замените шаблоны контактов, реквизитов, сроков хранения и обработчиков данных; проверьте и дополните политику на странице `/privacy`.

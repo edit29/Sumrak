@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
       ALLOWED_ORIGIN: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL in .env}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_MINI_APP_ORIGIN: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL in .env}
       OWNER_PASSWORD: ${OWNER_PASSWORD:?Set OWNER_PASSWORD in .env}
     expose:
       - "8080"
@@ -65,6 +67,36 @@ services:
       - backend
       - edge
 
+  miniapp:
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER in .env}/sumrak-miniapp:${IMAGE_TAG:-latest}
+    build:
+      context: ./sumrak-miniapp
+      args:
+        API_URL: http://api:8080
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL in .env}
+    restart: unless-stopped
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3001"
+    expose:
+      - "3001"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/miniapp/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    networks:
+      - backend
+      - edge
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -80,6 +112,8 @@ services:
       - caddy_config:/config
     depends_on:
       web:
+        condition: service_healthy
+      miniapp:
         condition: service_healthy
     networks:
       - edge

@@ -19,12 +19,14 @@ func TestLoadConfigReadsParentDotEnv(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, ".env"), []byte(
 		"DATABASE_URL=postgres://user:pass@localhost:5432/sumrak\n"+
 			"ALLOWED_ORIGIN=http://localhost:3000\n"+
-			"OWNER_PASSWORD=test-password\n",
+			"OWNER_PASSWORD=test-password\n"+
+			"TELEGRAM_BOT_TOKEN=test-bot-token\n"+
+			"TELEGRAM_MINI_APP_ORIGIN=https://mini.example.com\n",
 	), 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	keys := []string{"DATABASE_URL", "ALLOWED_ORIGIN", "OWNER_PASSWORD"}
+	keys := []string{"DATABASE_URL", "ALLOWED_ORIGIN", "OWNER_PASSWORD", "TELEGRAM_BOT_TOKEN", "TELEGRAM_MINI_APP_ORIGIN"}
 	type envValue struct {
 		value string
 		set   bool
@@ -47,9 +49,9 @@ func TestLoadConfigReadsParentDotEnv(t *testing.T) {
 		}
 	})
 
-	previousOrigin, previousOwnerPass := origin, ownerPass
+	previousOrigin, previousMiniAppOrigin, previousOwnerPass, previousBotToken := origin, miniAppOrigin, ownerPass, telegramBotToken
 	t.Cleanup(func() {
-		origin, ownerPass = previousOrigin, previousOwnerPass
+		origin, miniAppOrigin, ownerPass, telegramBotToken = previousOrigin, previousMiniAppOrigin, previousOwnerPass, previousBotToken
 	})
 	if err := os.Chdir(apiDir); err != nil {
 		t.Fatal(err)
@@ -69,5 +71,11 @@ func TestLoadConfigReadsParentDotEnv(t *testing.T) {
 	}
 	if ownerPass != "test-password" {
 		t.Fatalf("unexpected OWNER_PASSWORD: %q", ownerPass)
+	}
+	if telegramBotToken != "test-bot-token" {
+		t.Fatalf("unexpected TELEGRAM_BOT_TOKEN: %q", telegramBotToken)
+	}
+	if miniAppOrigin != "https://mini.example.com" {
+		t.Fatalf("unexpected TELEGRAM_MINI_APP_ORIGIN: %q", miniAppOrigin)
 	}
 }

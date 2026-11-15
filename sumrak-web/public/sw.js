@@ -22,6 +22,7 @@ self.addEventListener('fetch', event => {
 
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if (url.pathname === '/owner' || url.pathname.startsWith('/owner/') || url.pathname.startsWith('/o/')) return;
+  if (url.pathname === '/miniapp' || url.pathname.startsWith('/miniapp/')) return;
   if (request.mode !== 'navigate') return;
 
   event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));

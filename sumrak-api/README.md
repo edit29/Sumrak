@@ -1,20 +1,20 @@
 # Сумрак API (Go + PostgreSQL)
 
-Для локального запуска API из папки `sumrak-api` выполните `go run .`. API загружает `.env` из текущей папки или, если его там нет, из родительской папки (корень проекта). В файле должны быть заданы `DATABASE_URL`, `ALLOWED_ORIGIN` и `OWNER_PASSWORD`. Уже установленные переменные окружения имеют приоритет над значениями из `.env`.
+Для локального запуска API из папки `sumrak-api` выполните `go run .`. API загружает `.env` из текущей папки или, если его там нет, из родительской папки (корень проекта). В файле должны быть заданы `DATABASE_URL`, `ALLOWED_ORIGIN` и `OWNER_PASSWORD`. Для Telegram Mini App также задайте `TELEGRAM_BOT_TOKEN`; локальный origin Mini App по умолчанию — `http://localhost:3001`. Уже установленные переменные окружения имеют приоритет над значениями из `.env`.
 
 В Docker Compose переменные передаются контейнеру из корневого `.env`; после его изменения пересоздайте API командой `docker compose up -d --force-recreate api`. Перед публикацией задайте сильный уникальный `OWNER_PASSWORD` и production-адрес `ALLOWED_ORIGIN`.
 
-Эндпоинты: GET /api/pricing, POST /api/quote, POST /api/orders (заголовок Idempotency-Key, 16–80 символов), GET /api/orders/{token}.
+Публичные эндпоинты: GET /api/pricing, POST /api/quote, POST /api/orders (заголовок Idempotency-Key, 16–80 символов), GET /api/orders/{token}. Telegram Mini App использует защищённые GET `/api/telegram/pricing` и POST `/api/telegram/quote`, `/api/telegram/orders`, `/api/telegram/photos`; каждый запрос содержит `X-Telegram-Init-Data`, проверяемый сервером с помощью токена бота. Токен хранится только в окружении API и не передаётся фронтенду.
 Прайс хранится в строке `pricing` таблицы `settings`; каждая заявка сохраняет свой снимок. Клиент загружает ставки через GET `/api/pricing`, расчёт выполняет сервер. Каждая позиция заказа содержит один элемент; несколько элементов добавляются отдельными позициями.
 
 ## Деплой на VPS
 
 Корневой `compose.yaml` запускает PostgreSQL, Go API, Next.js в standalone-режиме и Caddy с автоматическим HTTPS. База и API доступны только во внутренней Docker-сети; наружу открыты только порты 80/443.
 
-1. Установите на VPS Docker Engine с плагином Docker Compose. Направьте DNS-записи домена на VPS и откройте входящие порты 80 и 443.
-2. Создайте на VPS `/opt/sumrak/.env` по образцу корневого `.env.example`. Укажите нижний регистр владельца GitHub в `GHCR_OWNER`, домен без схемы в `SITE_DOMAIN`, полный `https://` URL в `PUBLIC_SITE_URL`, а также уникальные `POSTGRES_PASSWORD` и `OWNER_PASSWORD`. Для пароля PostgreSQL используйте hex-строку, чтобы URL подключения был корректным. Ограничьте доступ к файлу (`chmod 600`).
+1. Создайте бота через @BotFather и настройте его Menu Button или Main Mini App на `https://ваш-домен/miniapp`. Затем установите на VPS Docker Engine с плагином Docker Compose, направьте DNS-записи домена на VPS и откройте входящие порты 80 и 443.
+2. Создайте на VPS `/opt/sumrak/.env` по образцу корневого `.env.example`. Укажите нижний регистр владельца GitHub в `GHCR_OWNER`, домен без схемы в `SITE_DOMAIN`, полный `https://` URL в `PUBLIC_SITE_URL`, уникальные `POSTGRES_PASSWORD` и `OWNER_PASSWORD`, а также выданный BotFather `TELEGRAM_BOT_TOKEN`. Для пароля PostgreSQL используйте hex-строку, чтобы URL подключения был корректным. Ограничьте доступ к файлу (`chmod 600`).
 3. В настройках репозитория GitHub задайте variable `PUBLIC_SITE_URL` с тем же HTTPS-адресом. Создайте secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` и `GHCR_READ_TOKEN` (токен с правом `read:packages`). Опциональные variables: `DEPLOY_PATH` (по умолчанию `/opt/sumrak`) и `GHCR_USERNAME`.
-4. Workflow `.github/workflows/deploy.yml` запускает Go-тесты и production-сборку веба на pull request. Push в `main` дополнительно публикует образы в GHCR и разворачивает их на VPS по SSH. Серверу должны быть доступны Docker Compose и указанный путь для деплоя.
+4. Workflow `.github/workflows/deploy.yml` запускает Go-тесты и production-сборку основного сайта и Mini App на pull request. Push в `main` дополнительно публикует образы в GHCR и разворачивает их на VPS по SSH. Серверу должны быть доступны Docker Compose и указанный путь для деплоя.
 
 Workflow передаёт на VPS `compose.yaml`, `Caddyfile` и схему для новой базы; файл `.env` остаётся только на сервере. SQL в `schema.sql` автоматически применяется только при первом создании пустого тома PostgreSQL. Для уже работающей базы применяйте нужные миграции отдельно. Том `postgres_data` сохраняет данные контейнера, но не заменяет резервные копии базы.
 
@@ -49,6 +49,7 @@ Workflow передаёт на VPS `compose.yaml`, `Caddyfile` и схему д�
 | `pricing.go` | Расчёт цены на сервере, проверка позиций, итоги |
 | `security.go` | Случайные токены и хеширование |
 | `health.go` | `GET /healthz` |
+| `telegram_auth.go` | Проверка подписи, срока действия и целостности Telegram `initData` |
 | `handlers_pricing.go` | `GET /api/pricing`, `POST /api/quote` |
 | `handlers_orders.go` | `POST /api/orders`, `GET /api/orders/{token}` |
 | `handlers_photos.go` | `POST /api/photos`, `GET /api/owner/photos/{id}` |

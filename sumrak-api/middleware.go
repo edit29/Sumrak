@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -15,9 +16,16 @@ var (
 // Origin + лимит 30 запросов в минуту с адреса + лимит тела 64 КБ
 func guard(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" && (origin == "" || r.Header.Get("Origin") != origin) {
-			fail(w, 403, "запрещённый origin")
-			return
+		if r.Method != "GET" {
+			requestOrigin := r.Header.Get("Origin")
+			allowedOrigin := requestOrigin == origin
+			if strings.HasPrefix(r.URL.Path, "/api/telegram/") && miniAppOrigin != "" && requestOrigin == miniAppOrigin {
+				allowedOrigin = true
+			}
+			if origin == "" || !allowedOrigin {
+				fail(w, 403, "запрещённый origin")
+				return
+			}
 		}
 		ip := r.Header.Get("X-Forwarded-For")
 		if ip == "" {
@@ -38,10 +46,24 @@ func guard(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		lim := int64(64 << 10)
-		if r.URL.Path == "/api/photos" {
+		if r.URL.Path == "/api/photos" || r.URL.Path == "/api/telegram/photos" {
 			lim = 4 << 20
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, lim)
+		h(w, r)
+	}
+}
+
+func telegramAuth(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if telegramBotToken == "" {
+			fail(w, 503, "Telegram Mini App не настроен")
+			return
+		}
+		if err := validateTelegramInitData(r.Header.Get("X-Telegram-Init-Data"), telegramBotToken, time.Now()); err != nil {
+			fail(w, 401, "Не удалось проверить данные Telegram")
+			return
+		}
 		h(w, r)
 	}
 }
