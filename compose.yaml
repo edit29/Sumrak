@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sumrak-api/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER in .env}/sumrak-api:${IMAGE_TAG:-latest}
+    build:
+      context: ./sumrak-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      ALLOWED_ORIGIN: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL in .env}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:?Set OWNER_PASSWORD in .env}
+    expose:
+      - "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+
+  web:
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER in .env}/sumrak-web:${IMAGE_TAG:-latest}
+    build:
+      context: ./sumrak-web
+      args:
+        API_URL: http://api:8080
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL in .env}
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8080
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    expose:
+      - "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/pricing').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    networks:
+      - backend
+      - edge
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - edge
+
+networks:
+  backend:
+    internal: true
+  edge:
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

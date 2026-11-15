@@ -1,0 +1,143 @@
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: sumrak-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sumrak-api/go.mod
+          cache-dependency-path: sumrak-api/go.sum
+      - name: Test Go API
+        working-directory: sumrak-api
+        run: go test ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sumrak-web/package-lock.json
+      - name: Install web dependencies
+        working-directory: sumrak-web
+        run: npm ci
+      - name: Build web app
+        working-directory: sumrak-web
+        env:
+          API_URL: http://api:8080
+          NEXT_PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://example.com' }}
+        run: npm run build
+
+  publish:
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require production site URL
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+        run: test -n "$PUBLIC_SITE_URL" || (echo "::error::Set the PUBLIC_SITE_URL repository variable." && exit 1)
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set lowercase image owner
+        run: echo "IMAGE_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sumrak-api
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-api:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./sumrak-web
+          push: true
+          build-args: |
+            API_URL=http://api:8080
+            NEXT_PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-web:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/sumrak-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deployment configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+        run: |
+          set -eu
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS GHCR_READ_TOKEN PUBLIC_SITE_URL; do
+            if [ -z "$(printenv "$name")" ]; then
+              echo "::error::Configure $name in GitHub repository settings."
+              exit 1
+            fi
+          done
+      - name: Copy stack files and deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/sumrak' }}
+          GHCR_USERNAME: ${{ vars.GHCR_USERNAME || github.repository_owner }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          set -eu
+          case "$DEPLOY_PATH" in
+            /*) ;;
+            *) echo "::error::DEPLOY_PATH must be an absolute path."; exit 1 ;;
+          esac
+          case "$DEPLOY_PATH" in
+            *[!A-Za-z0-9_./-]*) echo "::error::DEPLOY_PATH contains unsupported characters."; exit 1 ;;
+          esac
+
+          install -m 700 -d "$HOME/.ssh"
+          KEY_FILE="$HOME/.ssh/sumrak_deploy"
+          trap 'rm -f "$KEY_FILE"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$KEY_FILE"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$KEY_FILE" "$HOME/.ssh/known_hosts"
+
+          TARGET="$DEPLOY_USER@$DEPLOY_HOST"
+          SSH=(ssh -i "$KEY_FILE" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          SCP=(scp -i "$KEY_FILE" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          "${SSH[@]}" "$TARGET" "mkdir -p '$DEPLOY_PATH/sumrak-api'"
+          "${SCP[@]}" compose.yaml Caddyfile "$TARGET:$DEPLOY_PATH/"
+          "${SCP[@]}" sumrak-api/schema.sql "$TARGET:$DEPLOY_PATH/sumrak-api/schema.sql"
+          printf '%s' "$GHCR_READ_TOKEN" | "${SSH[@]}" "$TARGET" "docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+          "${SSH[@]}" "$TARGET" "cd '$DEPLOY_PATH' && IMAGE_TAG='$GITHUB_SHA' docker compose pull && IMAGE_TAG='$GITHUB_SHA' docker compose up -d --no-build --remove-orphans"
