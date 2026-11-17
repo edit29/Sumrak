@@ -4,7 +4,7 @@ export function middleware(request) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://telegram.org`,
+    `script-src 'self' 'wasm-unsafe-eval' 'nonce-${nonce}' 'strict-dynamic' https://telegram.org`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",

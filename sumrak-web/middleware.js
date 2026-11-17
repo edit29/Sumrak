@@ -5,7 +5,7 @@ export function middleware(request) {
   const isOwnerPage = request.nextUrl.pathname.startsWith('/owner');
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `script-src 'self' 'wasm-unsafe-eval' 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
