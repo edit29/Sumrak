@@ -11,6 +11,8 @@
 
 Корневой `compose.yaml` запускает PostgreSQL, Go API, Next.js в standalone-режиме и Caddy с автоматическим HTTPS. База и API доступны только во внутренней Docker-сети; наружу открыты только порты 80/443.
 
+Полный пошаговый гайд по подготовке VPS, SSH-ключам, DuckDNS, GitHub Actions Variables/Secrets и проверке первого деплоя находится в [DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md).
+
 1. Создайте бота через @BotFather и настройте его Menu Button или Main Mini App на `https://ваш-домен/miniapp`. Затем установите на VPS Docker Engine с плагином Docker Compose, направьте DNS-записи домена на VPS и откройте входящие порты 80 и 443.
 2. Создайте на VPS `/opt/sumrak/.env` по образцу корневого `.env.example`. Укажите нижний регистр владельца GitHub в `GHCR_OWNER`, домен без схемы в `SITE_DOMAIN`, полный `https://` URL в `PUBLIC_SITE_URL`, уникальные `POSTGRES_PASSWORD` и `OWNER_PASSWORD`, а также выданный BotFather `TELEGRAM_BOT_TOKEN`. Для пароля PostgreSQL используйте hex-строку, чтобы URL подключения был корректным. Ограничьте доступ к файлу (`chmod 600`).
 3. В настройках репозитория GitHub задайте variable `PUBLIC_SITE_URL` с тем же HTTPS-адресом. Создайте secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY_B64`, `DEPLOY_KNOWN_HOSTS` и `GHCR_READ_TOKEN` (токен с правом `read:packages`). `DEPLOY_SSH_KEY_B64` — Base64-кодированное содержимое незашифрованного приватного OpenSSH-ключа; в Windows PowerShell скопируйте его в буфер командой `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.ssh\sumrak_deploy_v2")) | Set-Clipboard`. Вставляйте его только в GitHub Secret, не в чат. Опциональные variables: `DEPLOY_PATH` (по умолчанию `/opt/sumrak`) и `GHCR_USERNAME`.
