@@ -1,6 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import ThemeToggle from './ThemeToggle';
 import { useEffect, useRef, useState } from 'react';
 import OrderForm from './OrderForm';
 import {
@@ -221,6 +222,7 @@ export default function Page() {
   return <main>
     <header className="row" style={{ gridColumn: '1 / -1' }}>
       <h1 style={{ gridColumn: 'auto', flex: '1 1 24rem' }}>{NAME} — бронирование, тонирование и растонирование</h1>
+      <ThemeToggle />
       <Link href="/owner" className="btn btn-link">Вход в кабинет</Link>
     </header>
     <Car type={cfg.type} wins={service === 'tint' ? cfg.windows || [] : []} lights={service === 'tint' ? cfg.lights || [] : []} vlt={cfg.vlt} color={cfg.color} cart={cart} />

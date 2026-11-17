@@ -18,6 +18,11 @@ export function middleware(request) {
   const requestHeaders = new Headers(request.headers);
 
   requestHeaders.set('Content-Security-Policy', csp);
+  
+  //условие для проверки на локалке без CSP
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next();
+  } 
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },

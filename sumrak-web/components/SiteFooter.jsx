@@ -6,7 +6,6 @@ export default function SiteFooter() {
     <footer className="site-footer">
       <span>© Сумрак</span>
       <div className="site-footer-actions">
-        <ThemeToggle />
         <nav aria-label="Информация о сайте">
           <Link href="/contacts">Контакты</Link>
           <Link href="/privacy">Политика конфиденциальности</Link>
