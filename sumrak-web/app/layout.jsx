@@ -1,4 +1,5 @@
 import './globals.css';
+import { headers } from 'next/headers';
 import Script from 'next/script';
 import PwaRegister from '../components/PwaRegister';
 import SiteFooter from '../components/SiteFooter';
@@ -42,7 +43,9 @@ export const viewport = {
   themeColor: '#f3f5f8',
 };
 
-export default function Root({ children }) {
+export default async function Root({ children }) {
+  await headers();
+
   return (
     <html lang="ru" suppressHydrationWarning>
       <body>

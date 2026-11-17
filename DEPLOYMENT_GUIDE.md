@@ -437,6 +437,10 @@ docker compose up -d --force-recreate api
 
 ## 13. Диагностика типичных ошибок
 
+### Белая страница и CSP блокирует inline-скрипты
+
+Next.js меняет содержимое встроенных скриптов между сборками, поэтому постоянные CSP-хеши в `Caddyfile` могут устареть и заблокировать загрузку страницы. В текущей конфигурации CSP с одноразовым nonce формируют middleware основного сайта и Mini App; не возвращай в Caddyfile фиксированный `script-src` с хешами или второй CSP-заголовок. После изменения middleware или Caddyfile отправь коммит в `main` и дождись успешного деплоя через GitHub Actions.
+
 ### GitHub пишет `This workflow does not exist`
 
 - Проверь, что в `main` есть `.github/workflows/deploy.yml`.

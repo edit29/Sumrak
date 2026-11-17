@@ -1,4 +1,5 @@
 import Script from 'next/script';
+import { headers } from 'next/headers';
 import './globals.css';
 import { SITE_URL } from '../lib/site';
 
@@ -15,7 +16,9 @@ export const viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  await headers();
+
   return (
     <html lang="ru">
       <body>
