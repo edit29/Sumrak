@@ -13,7 +13,7 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Frame-Options "SAMEORIGIN"
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-Qz64raOnaX9yQqboIToS0jPXVCYJfUNTk8F1s6UawoM='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
 		-Server
 	}
 	@owner path /owner /owner/*
