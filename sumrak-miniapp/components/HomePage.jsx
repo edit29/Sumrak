@@ -1,12 +1,12 @@
 'use client';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import OrderForm from './OrderForm';
 import {
   COLORS, LIGHTS, NAME, REMOVAL_ELEMENTS, SERVICES,
   TYPES, VLT, WINDOWS, label, normalizeColor, rub, api,
 } from '../lib/config';
-import { SITE_URL } from '../lib/site';
 
 const Car = dynamic(() => import('./Car'), { ssr: false, loading: () => <div className="stage" /> });
 const J = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
@@ -221,7 +221,7 @@ export default function Page() {
   return <main>
     <header className="row" style={{ gridColumn: '1 / -1' }}>
       <h1 style={{ gridColumn: 'auto', flex: '1 1 24rem' }}>{NAME} — бронирование, тонирование и растонирование</h1>
-      <a href={`${SITE_URL}/owner`} className="btn btn-link" target="_blank" rel="noreferrer">Вход владельца</a>
+      <Link href="/owner" className="btn btn-link">Вход владельца</Link>
     </header>
     <Car type={cfg.type} wins={service === 'tint' ? cfg.windows || [] : []} lights={service === 'tint' ? cfg.lights || [] : []} vlt={cfg.vlt} color={cfg.color} cart={cart} />
     <div>

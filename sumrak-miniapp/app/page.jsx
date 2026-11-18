@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import HomePage from '../components/HomePage';
 import { SITE_URL } from '../lib/site';
 
@@ -32,7 +33,7 @@ export default function Page() {
 
   return (
     <>
-      <p className="miniapp-intro">Заявка через Telegram · <a href={`${SITE_URL}/owner`} target="_blank" rel="noreferrer">Вход владельца</a></p>
+      <p className="miniapp-intro">Заявка через Telegram · <Link href="/owner">Вход владельца</Link></p>
       <HomePage />
     </>
   );

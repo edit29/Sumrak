@@ -28,3 +28,9 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS photos (id text PRIMARY KEY, order_id bigint REFERENCES orders(id) ON DELETE CASCADE,
  mime text NOT NULL, data bytea NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS sessions (token_hash text PRIMARY KEY, expires timestamptz NOT NULL);
+
+-- Вход владельца из Telegram: закрепление username за числовым Telegram ID. Повторный запуск безопасен.
+CREATE TABLE IF NOT EXISTS owner_telegram_bindings (
+ username text PRIMARY KEY,
+ tg_user_id bigint NOT NULL,
+ bound_at timestamptz NOT NULL DEFAULT now());

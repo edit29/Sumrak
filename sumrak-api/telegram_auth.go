@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"sort"
@@ -72,4 +73,32 @@ func validateTelegramInitData(initData, botToken string, now time.Time) error {
 		return errInvalidTelegramInitData
 	}
 	return nil
+}
+
+// Пользователь Telegram из initData.
+type telegramUser struct {
+	ID       int64
+	Username string // может быть пустым: у пользователя не обязан быть username
+	AuthDate time.Time
+}
+
+// telegramUserFromInitData достаёт пользователя из initData.
+// Подпись здесь НЕ проверяется: вызывайте только после validateTelegramInitData (middleware telegramAuth).
+func telegramUserFromInitData(initData string) (telegramUser, bool) {
+	values, err := url.ParseQuery(initData)
+	if err != nil {
+		return telegramUser{}, false
+	}
+	var raw struct {
+		ID       int64  `json:"id"`
+		Username string `json:"username"`
+	}
+	if json.Unmarshal([]byte(values.Get("user")), &raw) != nil || raw.ID == 0 {
+		return telegramUser{}, false
+	}
+	sec, err := strconv.ParseInt(values.Get("auth_date"), 10, 64)
+	if err != nil {
+		return telegramUser{}, false
+	}
+	return telegramUser{ID: raw.ID, Username: raw.Username, AuthDate: time.Unix(sec, 0)}, true
 }

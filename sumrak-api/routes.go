@@ -24,6 +24,13 @@ func routes() *http.ServeMux {
 	mux.HandleFunc("POST /api/telegram/orders", guard(telegramAuth(create)))
 	mux.HandleFunc("POST /api/telegram/photos", guard(telegramAuth(upload)))
 
+	// Кабинет владельца внутри Mini App: подпись Telegram + (после входа) сеанс владельца
+	mux.HandleFunc("POST /api/telegram/owner/login", guard(telegramAuth(ownerTelegramLogin)))
+	mux.HandleFunc("POST /api/telegram/owner/logout", guard(telegramAuth(logout)))
+	mux.HandleFunc("GET /api/telegram/owner/orders", guard(telegramAuth(auth(ownerList))))
+	mux.HandleFunc("PATCH /api/telegram/owner/orders/{id}", guard(telegramAuth(auth(ownerPatch))))
+	mux.HandleFunc("DELETE /api/telegram/owner/orders/{id}", guard(telegramAuth(auth(ownerDelete))))
+
 	// Кабинет владельца (после входа)
 	mux.HandleFunc("POST /api/owner/login", guard(login))
 	mux.HandleFunc("POST /api/owner/logout", guard(logout))

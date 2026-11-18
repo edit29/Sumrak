@@ -16,6 +16,10 @@ var (
 	miniAppOrigin    string
 	ownerPass        string // пароль кабинета владельца
 	telegramBotToken string
+
+	// Кто может войти в кабинет из Telegram без пароля (см. handlers_owner_telegram.go)
+	ownerTelegramUsernames map[string]bool
+	ownerTelegramIDs       map[int64]bool
 )
 
 func loadConfig() error {
@@ -39,5 +43,7 @@ func loadConfig() error {
 	}
 	ownerPass = os.Getenv("OWNER_PASSWORD")
 	telegramBotToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	ownerTelegramUsernames = parseTelegramUsernames(os.Getenv("OWNER_TELEGRAM_USERNAMES"))
+	ownerTelegramIDs = parseTelegramIDs(os.Getenv("OWNER_TELEGRAM_IDS"))
 	return nil
 }

@@ -18,6 +18,11 @@ func login(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, "Неверный пароль")
 		return
 	}
+	startOwnerSession(w, r)
+}
+
+// startOwnerSession выдаёт cookie сеанса владельца. Общая для входа по паролю и входа из Telegram.
+func startOwnerSession(w http.ResponseWriter, r *http.Request) {
 	t := rnd()
 	if _, err := db.Exec(r.Context(), `INSERT INTO sessions(token_hash,expires) VALUES($1, now()+interval '7 days')`, hash(t)); err != nil {
 		fail(w, 500, "база недоступна")
