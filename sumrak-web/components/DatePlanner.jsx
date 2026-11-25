@@ -183,7 +183,7 @@ export default function DatePlanner() {
               </div>
             </details>
           <section className="confirm-panel">
-            <div><h2>Тебе нравится этот план?</h2></div>
+            <div><h2>Вам нравится этот план?</h2></div>
             <button className="primary-button confirm-button" disabled={saving} onClick={confirmRoute}>{saving ? 'Сохраняем…' : 'Подтвердить маршрут'} <span>♥</span></button>
             {error && <p className="error-message">{error}</p>}
           </section>
