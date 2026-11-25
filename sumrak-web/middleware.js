@@ -5,12 +5,12 @@ export function middleware(request) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isOwnerPage = request.nextUrl.pathname.startsWith('/owner') || request.nextUrl.pathname.startsWith('/request');
   const csp = [
-    "default-src 'self'",
-    `script-src 'self' 'wasm-unsafe-eval' 'nonce-${nonce}' 'strict-dynamic'`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
-    "font-src 'self'",
-    "connect-src 'self'",
+    "default-src 'self' https:",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https:",
+    "connect-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
