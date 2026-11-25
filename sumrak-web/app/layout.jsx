@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: { default: 'A Little Invitation', template: '%s | A Little Invitation' },
+  title: { default: 'With love', template: '%s | A Little Invitation' },
   description: 'Одно маленькое приглашение.',
   robots: { index: false, follow: false },
 };

@@ -24,7 +24,7 @@ export default function HomePage() {
       <main className="invite-page invite-declined">
         <div className="ambient-glow glow-a" /><div className="ambient-glow glow-b" />
         <div className="invite-card decline-card">
-          <h1>Спасибо, что<br /><span>ответили честно.</span></h1>
+          <h1>Спасибо</h1>
           <p className="invite-copy">Хорошего вам дня ♡</p>
         </div>
       </main>
