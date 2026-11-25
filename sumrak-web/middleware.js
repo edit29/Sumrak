@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 export function middleware(request) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
