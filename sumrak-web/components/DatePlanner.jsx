@@ -191,11 +191,10 @@ export default function DatePlanner() {
         </>
       ) : (
         <section className="success-card">
-          <div className="success-spark">✦</div><p className="overline">МАРШРУТ СОХРАНЁН</p>
+          <div className="success-spark">❤️</div>
           <h1>Кажется, нас ждёт<br /><span>что-то классное.</span></h1>
-          <p>Твой вариант маршрута уже у меня. Спасибо, что собрала его вместе со мной ❤️</p>
+          <p>Ваш выбор уже у меня. Спасибо, что собрали его ❤️</p>
           <div className="success-route">{selected.map((item, index) => <div key={item.id + index}><span>0{index + 1}</span>{item.icon} {item.title}</div>)}</div>
-          <button className="secondary-button" onClick={() => router.push('/')}>Вернуться в начало</button>
         </section>
       )}
     </main>
