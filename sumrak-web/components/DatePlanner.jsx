@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useRef, useEffect  } from 'react';
 
 const categories = [
   {
@@ -85,6 +86,8 @@ const jokes = [
 ];
 
 export default function DatePlanner() {
+  const videoRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const [route, setRoute] = useState(defaults);
   const [editing, setEditing] = useState(null);
@@ -116,6 +119,49 @@ export default function DatePlanner() {
       setSaving(false);
     }
   }
+
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setIsOpen(true);
+      }
+    } catch (error) {
+      console.error('Ошибка доступа к камере:', error);
+      alert('Не удалось получить доступ к камере');
+    }
+  };
+
+  const closeCamera = () => {
+    const stream = videoRef.current?.srcObject;
+
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsOpen(false);
+  };
+
+  useEffect(() => {
+  return () => {
+    const stream = videoRef.current?.srcObject;
+
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+  };
+  }, []);
+
 
   return (
     <main className="planner-shell">
@@ -195,6 +241,32 @@ export default function DatePlanner() {
           <h1>Кажется, нас ждёт<br /><span>что-то классное.</span></h1>
           <p>Ваш выбор уже у меня. Спасибо, что собрали его ❤️</p>
           <div className="success-route">{selected.map((item, index) => <div key={item.id + index}><span>0{index + 1}</span>{item.icon} {item.title}</div>)}</div>
+          <section className="camera-panel">
+  <h2>📸 Немного воспоминаний?</h2>
+
+  {!isOpen ? (
+    <button className="primary-button" onClick={openCamera}>
+      Открыть камеру
+    </button>
+  ) : (
+    <div>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        style={{
+          width: '100%',
+          maxWidth: '600px',
+          borderRadius: '12px',
+        }}
+      />
+
+      <button className="primary-button" onClick={closeCamera}>
+        Выключить камеру
+      </button>
+    </div>
+  )}
+</section>
         </section>
       )}
     </main>
