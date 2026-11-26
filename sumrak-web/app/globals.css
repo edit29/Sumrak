@@ -289,7 +289,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
 .rose-petal {
   position: absolute;
   top: -50px;
-  font-size: 24px;
+  font-size: 50px;
   animation: falling linear forwards;
 }
 

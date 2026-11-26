@@ -172,7 +172,7 @@ const closeCamera = () => {
 
     {showPetals && (
       <div className="petals-container">
-        {Array.from({ length: 80 }).map((_, i) => (
+        {Array.from({ length: 250 }).map((_, i) => (
           <div
             key={i}
             className="rose-petal"
