@@ -95,6 +95,7 @@ export default function DatePlanner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [showPetals, setShowPetals] = useState(false);
   const selected = useMemo(() => route.map((id, index) => categories[index].options.find((item) => item.id === id)), [route]);
 
   function choose(position, id) {
@@ -114,6 +115,7 @@ export default function DatePlanner() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Не получилось сохранить маршрут. Попробуй ещё раз.');
       setDone(true);
+      setShowPetals(true);
     } catch (err) {
       setError(err.message || 'Не получилось сохранить маршрут.');
     } finally {
@@ -166,8 +168,29 @@ const closeCamera = () => {
 }, []);
 
   return (
-    <main className="planner-shell">
-      <div className="ambient ambient-one" /><div className="ambient ambient-two" /><div className="ambient ambient-three" />
+      <main className="planner-shell">
+
+    {showPetals && (
+      <div className="petals-container">
+        {Array.from({ length: 80 }).map((_, i) => (
+          <div
+            key={i}
+            className="rose-petal"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${4 + Math.random() * 5}s`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          >
+            🌹
+          </div>
+        ))}
+      </div>
+    )}
+
+    <div className="ambient ambient-one" />
+    <div className="ambient ambient-two" />
+    <div className="ambient ambient-three" />
       <header className="planner-header">
         <a className="wordmark" href="/">✳ <span>OUR LITTLE DATE</span></a>
       </header>

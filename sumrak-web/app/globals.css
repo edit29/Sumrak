@@ -278,3 +278,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text"
         transform: translateY(0);
     }
 }
+.petals-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 99999;
+}
+
+.rose-petal {
+  position: absolute;
+  top: -50px;
+  font-size: 24px;
+  animation: falling linear forwards;
+}
+
+@keyframes falling {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
